@@ -20,7 +20,7 @@ class LibmagicConan(ConanFile):
     def source(self):
         zip_name = "FILE%s.tar.gz" % (self.version.replace('.', '_'))
         download("https://github.com/file/file/archive/%s" % zip_name, zip_name)
-        check_md5(zip_name, "9e69e9260f30492fc7ed93bb7e572dea")
+        check_md5(zip_name, "bc2af82a6ccc25eda2f3586153b1a8a2")
         unzip(zip_name)
         os.unlink(zip_name)
 
