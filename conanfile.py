@@ -65,9 +65,13 @@ class LibmagicConan(ConanFile):
                 tools.run_in_windows_bash(self, tools.unix_path("make"))
                 tools.run_in_windows_bash(self, tools.unix_path("make install"))
 
-    def _build_macos(self):
+    def _build_autotools(self):
         env_build = AutoToolsBuildEnvironment(self)
         env_build.fpic = True
+        if self.settings.arch == "x86":
+            env_build.flags.append('-m32')
+        elif self.settings.arch == "x86_64":
+            env_build.flags.append('-m64')
         with tools.environment_append(env_build.vars):
             configure_args = ['--prefix=%s' % self.package_folder]
             configure_args.append('--enable-shared' if self.options.shared else '--disable-shared')
@@ -78,28 +82,14 @@ class LibmagicConan(ConanFile):
                 env_build.make(args=["all"])
                 env_build.make(args=["install"])
 
-    def _build_linux(self):
-        env_build = AutoToolsBuildEnvironment(self)
-        env_build.fpic = True
-        with tools.environment_append(env_build.vars):
-            configure_args = ['--prefix=%s' % self.package_folder]
-            configure_args.append('--enable-shared' if self.options.shared else '--disable-shared')
-            configure_args.append('--enable-static' if not self.options.shared else '--disable-static')
-            with tools.chdir(self.source_subfolder):
-                self.run("autoreconf -f -i")
-                env_build.configure(args=configure_args)
-                env_build.make(args=["all"])
-                env_build.make(args=["install"])
 
     def build(self):
         if self.settings.os == "Windows" and self.settings.compiler == "gcc":
             self._build_mingw()
         elif self.settings.os == "Windows" and self.settings.compiler == "Visual Studio":
             self._build_visual_studio()
-        elif self.settings.os == "Linux":
-            self._build_linux()
         else:
-            self._build_macos()
+            self._build_autotools()
         
 
     def package(self):
