@@ -32,9 +32,17 @@ class LibmagicConan(ConanFile):
         os.rename(extracted_dir, self.source_subfolder)
         #Rename to "sources" is a convention to simplify later steps
 
+    def build_requirements(self):
+        if self.settings.os == "Windows":
+            self.build_requires("cygwin_installer/2.9.0@bincrafters/stable")
+            if self.settings.compiler != "Visual Studio":
+                self.build_requires("mingw_installer/1.0@conan/stable")
+
     def configure(self):
         del self.settings.compiler.libcxx
 
+    def _build_visual_studio(self):
+        raise Exception("not implemented")
 
     def _build_mingw(self):
         env_build = AutoToolsBuildEnvironment(self)
@@ -78,7 +86,7 @@ class LibmagicConan(ConanFile):
             configure_args.append('--enable-shared' if self.options.shared else '--disable-shared')
             configure_args.append('--enable-static' if not self.options.shared else '--disable-static')
             with tools.chdir(self.source_subfolder):
-                env_build.run("autoreconf -f -i")
+                self.run("autoreconf -f -i")
                 env_build.configure(args=configure_args)
                 env_build.make(args=["all"])
                 env_build.make(args=["install"])
@@ -87,9 +95,7 @@ class LibmagicConan(ConanFile):
         if self.settings.os == "Windows" and self.settings.compiler == "gcc":
             self._build_mingw()
         elif self.settings.os == "Windows" and self.settings.compiler == "Visual Studio":
-            #self._build_visual_studio()
-            self.output.error("Cannot build with Visual Studio")
-            exit(-1)
+            self._build_visual_studio()
         elif self.settings.os == "Linux":
             self._build_linux()
         else:
