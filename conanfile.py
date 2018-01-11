@@ -78,7 +78,7 @@ class LibmagicConan(ConanFile):
             configure_args.append('--enable-static' if not self.options.shared else '--disable-static')
             with tools.chdir(self.source_subfolder):
                 self.run("autoreconf -f -i")
-                env_build.configure(args=configure_args)
+                env_build.configure(host=False, args=configure_args)
                 env_build.make(args=["all"])
                 env_build.make(args=["install"])
 
