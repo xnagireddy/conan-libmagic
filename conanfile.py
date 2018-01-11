@@ -41,6 +41,16 @@ class LibmagicConan(ConanFile):
     def configure(self):
         del self.settings.compiler.libcxx
 
+    def _is_travis(self):
+        if "TRAVIS" in os.environ:
+            self.output.info("YEP")
+        else:
+            self.output.info("NOPE")
+            self.output.info(os.environ)
+
+        return "TRAVIS" in os.environ
+
+
     def _build_visual_studio(self):
         raise Exception("not implemented")
 
@@ -78,7 +88,10 @@ class LibmagicConan(ConanFile):
             configure_args.append('--enable-static' if not self.options.shared else '--disable-static')
             with tools.chdir(self.source_subfolder):
                 self.run("autoreconf -f -i")
-                env_build.configure(host=False, args=configure_args)
+                host = None
+                if self._is_travis():
+                    host = False 
+                env_build.configure(host=host, args=configure_args)
                 env_build.make(args=["all"])
                 env_build.make(args=["install"])
 
