@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from conans import ConanFile, AutoToolsBuildEnvironment, tools
+from conans import ConanFile, VisualStudioBuildEnvironment, AutoToolsBuildEnvironment, tools
 import os
 
 
@@ -18,6 +18,7 @@ class LibmagicConan(ConanFile):
     #use static org/channel for libs in conan-center
     #use version ranges for dependencies unless there's a reason not to
     requires = "zlib/[>=1.2.8]@conan/stable"
+
     source_subfolder = "sources"
         
     # def requirements(self):
@@ -32,27 +33,26 @@ class LibmagicConan(ConanFile):
         os.rename(extracted_dir, self.source_subfolder)
         #Rename to "sources" is a convention to simplify later steps
 
-    def build_requirements(self):
-        if self.settings.os == "Windows":
-            self.build_requires("cygwin_installer/2.9.0@bincrafters/stable")
-            if self.settings.compiler != "Visual Studio":
-                self.build_requires("mingw_installer/1.0@conan/stable")
-
     def configure(self):
         del self.settings.compiler.libcxx
 
-    def _is_travis(self):
-        if "TRAVIS" in os.environ:
-            self.output.info("YEP")
-        else:
-            self.output.info("NOPE")
-            self.output.info(os.environ)
-
-        return "TRAVIS" in os.environ
-
 
     def _build_visual_studio(self):
-        raise Exception("not implemented")
+        env_build = VisualStudioBuildEnvironment(self)
+        with tools.environment_append(env_build.vars):
+            with tools.chdir(self.source_subfolder):
+                solution_file = "libusb_2015.sln"
+                if self.settings.compiler.version == "12":
+                    solution_file = "libusb_2013.sln"
+                elif self.settings.compiler.version == "11":
+                    solution_file = "libusb_2012.sln"
+                solution_file = os.path.join("msvc", solution_file)
+                build_command = tools.build_sln_command(self.settings, solution_file)
+                if self.settings.arch == "x86":
+                    build_command = build_command.replace("x86", "Win32")
+                command = "%s && %s" % (tools.vcvars_command(self.settings), build_command)
+                self.run(command)
+
 
     def _build_mingw(self):
         env_build = AutoToolsBuildEnvironment(self)
@@ -70,7 +70,6 @@ class LibmagicConan(ConanFile):
                 configure_args.append('--build=i686-w64-mingw32')
                 configure_args.append('--host=i686-w64-mingw32')
             with tools.chdir(self.source_subfolder):
-                tools.run_in_windows_bash(self, tools.unix_path("autoreconf -f -i"))
                 tools.run_in_windows_bash(self, tools.unix_path("./configure %s" % ' '.join(configure_args)))
                 tools.run_in_windows_bash(self, tools.unix_path("make"))
                 tools.run_in_windows_bash(self, tools.unix_path("make install"))
@@ -78,44 +77,38 @@ class LibmagicConan(ConanFile):
     def _build_autotools(self):
         env_build = AutoToolsBuildEnvironment(self)
         env_build.fpic = True
-        if self.settings.arch == "x86":
-            env_build.flags.append('-m32')
-        elif self.settings.arch == "x86_64":
-            env_build.flags.append('-m64')
         with tools.environment_append(env_build.vars):
             configure_args = ['--prefix=%s' % self.package_folder]
-            configure_args.append('--enable-shared' if self.options.shared else '--disable-shared')
-            configure_args.append('--enable-static' if not self.options.shared else '--disable-static')
             with tools.chdir(self.source_subfolder):
                 self.run("autoreconf -f -i")
-                host = None
-                if self._is_travis():
-                    host = False 
-                env_build.configure(host=host, args=configure_args)
+                env_build.configure(args=configure_args)
                 env_build.make(args=["all"])
                 env_build.make(args=["install"])
 
-
     def build(self):
-        if self.settings.os == "Windows" and self.settings.compiler == "gcc":
-            self._build_mingw()
-        elif self.settings.os == "Windows" and self.settings.compiler == "Visual Studio":
-            self._build_visual_studio()
-        else:
-            self._build_autotools()
-        
+        path_env = os.environ['PATH']
+        path = os.path.join(self.build_folder, os.path.join(self.source_subfolder, "src"))
+        path_env = "{0}:{1}".format(path, path_env)
+
+        with tools.environment_append({'PATH': path_env}):
+            if self.settings.os == "Windows" and self.settings.compiler == "Visual Studio":
+                self._build_visual_studio()
+            elif self.settings.os == "Windows" and self.settings.compiler == "gcc":
+                self._build_mingw()
+            else:
+                self._build_autotools()
 
     def package(self):
-        with tools.chdir("sources"):
+        with tools.chdir(self.source_subfolder):
             self.copy(pattern="COPYING")
-            # self.copy(pattern="magic.h", dst="include", src="src")
-            # self.copy(pattern="*.dll", dst="bin", src="bin", keep_path=False)
-            # self.copy(pattern="*.lib", dst="lib", src="lib", keep_path=False)
-            # self.copy(pattern="*.a", dst="lib", src="lib", keep_path=False)
-            # self.copy(pattern="*.so*", dst="lib", src="lib", keep_path=False)
-            # self.copy(pattern="*.dylib", dst="lib", src="lib", keep_path=False)
-            # self.copy("magic.mgc", dst="share/misc", src="magic", keep_path=False)
-            # self.copy(pattern="*", dst="share/misc/magic", src="magic/Magdir", keep_path=False)
+            self.copy(pattern="magic.h", dst="include", src="src")
+            self.copy(pattern="*.dll", dst="bin", src="bin", keep_path=False)
+            self.copy(pattern="*.lib", dst="lib", src="lib", keep_path=False)
+            self.copy(pattern="*.a", dst="lib", src="lib", keep_path=False)
+            self.copy(pattern="*.so*", dst="lib", src="lib", keep_path=False)
+            self.copy(pattern="*.dylib", dst="lib", src="lib", keep_path=False)
+            self.copy("magic.mgc", dst="share/misc", src="magic", keep_path=False)
+            self.copy(pattern="*", dst="share/misc/magic", src="magic/Magdir", keep_path=False)
 
 
     def package_info(self):
