@@ -33,70 +33,44 @@ class LibmagicConan(ConanFile):
         os.rename(extracted_dir, self.source_subfolder)
         #Rename to "sources" is a convention to simplify later steps
 
-    def configure(self):
-        del self.settings.compiler.libcxx
-
-
-    def _build_visual_studio(self):
-        env_build = VisualStudioBuildEnvironment(self)
-        with tools.environment_append(env_build.vars):
-            with tools.chdir(self.source_subfolder):
-                solution_file = "libusb_2015.sln"
-                if self.settings.compiler.version == "12":
-                    solution_file = "libusb_2013.sln"
-                elif self.settings.compiler.version == "11":
-                    solution_file = "libusb_2012.sln"
-                solution_file = os.path.join("msvc", solution_file)
-                build_command = tools.build_sln_command(self.settings, solution_file)
-                if self.settings.arch == "x86":
-                    build_command = build_command.replace("x86", "Win32")
-                command = "%s && %s" % (tools.vcvars_command(self.settings), build_command)
-                self.run(command)
-
-
-    def _build_mingw(self):
-        env_build = AutoToolsBuildEnvironment(self)
-        env_build.fpic = True
-        unix_environment = {}
-        for key, value in env_build.vars.items():
-            unix_environment[key] = value.replace("\\", "/")
-        with tools.environment_append(unix_environment):
-            configure_args = ['--prefix="%s"' % self.package_folder]
-            configure_args.append('--enable-shared' if self.options.shared else '--disable-shared')
-            configure_args.append('--enable-static' if not self.options.shared else '--disable-static')
-            if self.settings.arch == "x86_64":
-                configure_args.append('--host=x86_64-w64-mingw32')
-            if self.settings.arch == "x86":
-                configure_args.append('--build=i686-w64-mingw32')
-                configure_args.append('--host=i686-w64-mingw32')
-            with tools.chdir(self.source_subfolder):
-                tools.run_in_windows_bash(self, tools.unix_path("./configure %s" % ' '.join(configure_args)))
-                tools.run_in_windows_bash(self, tools.unix_path("make"))
-                tools.run_in_windows_bash(self, tools.unix_path("make install"))
-
     def _build_autotools(self):
-        env_build = AutoToolsBuildEnvironment(self)
-        env_build.fpic = True
-        with tools.environment_append(env_build.vars):
-            configure_args = ['--prefix=%s' % self.package_folder]
-            with tools.chdir(self.source_subfolder):
+        with tools.chdir("sources"):
+
+            env_build = AutoToolsBuildEnvironment(self)
+            env_build.fpic = True
+
+            with tools.environment_append(env_build.vars):
+                config_args = ['--prefix=%s' % self.package_folder]
+                for option_name in self.options.values.fields:
+                    if(option_name == "shared"):
+                        if(getattr(self.options, "shared")):
+                            config_args.append("--enable-shared")
+                            config_args.append("--disable-static")
+                        else:
+                            config_args.append("--enable-static")
+                            config_args.append("--disable-shared")
+                    else:
+                        activated = getattr(self.options, option_name)
+                        if activated:
+                            self.output.info("Activated option! %s" % option_name)
+                            config_args.append("--%s" % option_name)
+
                 self.run("autoreconf -f -i")
-                env_build.configure(args=configure_args)
+                env_build.configure(args=config_args)
                 env_build.make(args=["all"])
                 env_build.make(args=["install"])
 
     def build(self):
+        if self.settings.compiler == 'Visual Studio':
+            # self.build_vs()
+            self.output.fatal("No windows support yet. Sorry. Help a fellow out and contribute back?")
+
         path_env = os.environ['PATH']
         path = os.path.join(self.build_folder, os.path.join(self.source_subfolder, "src"))
         path_env = "{0}:{1}".format(path, path_env)
 
         with tools.environment_append({'PATH': path_env}):
-            if self.settings.os == "Windows" and self.settings.compiler == "Visual Studio":
-                self._build_visual_studio()
-            elif self.settings.os == "Windows" and self.settings.compiler == "gcc":
-                self._build_mingw()
-            else:
-                self._build_autotools()
+            self._build_autotools()
 
     def package(self):
         with tools.chdir(self.source_subfolder):
