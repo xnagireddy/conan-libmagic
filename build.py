@@ -23,7 +23,7 @@ def get_version_from_recipe():
 
 
 def get_default_vars():
-    username = os.getenv("CONAN_USERNAME", "bincrafters")
+    username = os.getenv("CONAN_USERNAME", "DEGoodmanWilson")
     channel = os.getenv("CONAN_CHANNEL", "testing")
     version = get_version_from_recipe()
     return username, channel, version
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     name = get_name_from_recipe()
     username, channel, version = get_env_vars()
     reference = "{0}/{1}".format(name, version)
-    upload = "https://api.bintray.com/conan/{0}/public-conan".format(username)
+    upload = "https://api.bintray.com/conan/{0}/opensource".format(username)
 
     builder = ConanMultiPackager(
         username=username,
