@@ -26,7 +26,7 @@ class LibmagicConan(ConanFile):
     #     self.requires.add("libuv/[>=1.15.0]@bincrafters/stable")
 
     def source(self):
-        source_url = ":q"
+        source_url = "https://github.com/file/file"
         filename_root = "FILE{0}".format(self.version.replace('.', '_'))
         tools.get("{0}/archive/{1}.tar.gz".format(source_url, filename_root))
         extracted_dir = "file-{0}".format(filename_root)
