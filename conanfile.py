@@ -7,7 +7,7 @@ import os
 
 class LibmagicConan(ConanFile):
     name = "libmagic"
-    version = "5.29"
+    version = "5.25"
     url = "https://github.com/bincrafters/conan-libmagic"
     description = "This library can be used to classify files according to magic number tests."
     license = "https://github.com/file/file/blob/master/COPYING"
@@ -26,7 +26,7 @@ class LibmagicConan(ConanFile):
     #     self.requires.add("libuv/[>=1.15.0]@bincrafters/stable")
 
     def source(self):
-        source_url = "https://github.com/file/file"
+        source_url = ":q"
         filename_root = "FILE{0}".format(self.version.replace('.', '_'))
         tools.get("{0}/archive/{1}.tar.gz".format(source_url, filename_root))
         extracted_dir = "file-{0}".format(filename_root)
