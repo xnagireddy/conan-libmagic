@@ -57,20 +57,20 @@ class LibmagicConan(ConanFile):
 
                 self.run("autoreconf -f -i")
                 env_build.configure(args=config_args)
-                env_build.make(args=["all"])
-                env_build.make(args=["install"])
+                env_build.make()
 
     def build(self):
         if self.settings.compiler == 'Visual Studio':
             # self.build_vs()
             self.output.fatal("No windows support yet. Sorry. Help a fellow out and contribute back?")
 
-        path_env = os.environ['PATH']
-        path = os.path.join(self.build_folder, os.path.join(self.source_subfolder, "src"))
-        path_env = "{0}:{1}".format(path, path_env)
+        # path_env = os.environ['PATH']
+        # path = os.path.join(self.build_folder, os.path.join(self.source_subfolder, "src"))
+        # path_env = "{0}:{1}".format(path, path_env)
 
-        with tools.environment_append({'PATH': path_env}):
-            self._build_autotools()
+        # with tools.environment_append({'PATH': path_env}):
+            # self._build_autotools()
+        self._build_autotools()
 
     def package(self):
         with tools.chdir(self.source_subfolder):
