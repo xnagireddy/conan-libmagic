@@ -73,16 +73,15 @@ class LibmagicConan(ConanFile):
         self._build_autotools()
 
     def package(self):
-        with tools.chdir(self.source_subfolder):
-            self.copy(pattern="COPYING")
-            self.copy(pattern="magic.h", dst="include", src="src")
-            self.copy(pattern="*.dll", dst="bin", src="bin", keep_path=False)
-            self.copy(pattern="*.lib", dst="lib", src="lib", keep_path=False)
-            self.copy(pattern="*.a", dst="lib", src="lib", keep_path=False)
-            self.copy(pattern="*.so*", dst="lib", src="lib", keep_path=False)
-            self.copy(pattern="*.dylib", dst="lib", src="lib", keep_path=False)
-            self.copy("magic.mgc", dst="share/misc", src="magic", keep_path=False)
-            self.copy(pattern="*", dst="share/misc/magic", src="magic/Magdir", keep_path=False)
+        self.copy(pattern="COPYING")
+        self.copy(pattern="magic.h", dst="include", src="sources/src")
+        # self.copy(pattern="*.dll", dst="bin", src="sources/bin", keep_path=False)
+        self.copy(pattern="*.lib", dst="lib", src="sources", keep_path=False)
+        self.copy(pattern="*.a", dst="lib", src="sources", keep_path=False)
+        self.copy(pattern="*.so*", dst="lib", src="sources", keep_path=False)
+        self.copy(pattern="*.dylib", dst="lib", src="sources", keep_path=False)
+        self.copy("magic.mgc", dst="share/misc", src="sources/magic", keep_path=False)
+        self.copy(pattern="*", dst="share/misc/magic", src="sources/magic/Magdir", keep_path=False)
 
 
     def package_info(self):
