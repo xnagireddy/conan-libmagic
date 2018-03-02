@@ -66,7 +66,6 @@ class LibmagicConan(ConanFile):
             self.output.fatal("No windows support yet. Sorry. Help a fellow out and contribute back?")
 
         env = {}
-        self.output.info(subprocess.call(["file", "--version"])) # debugging
         if (subprocess.call(["file", "--version"]) != 0) or (subprocess.check_output(["file", "--version"]).split()[0] != "file-{0}".format(self.version)):
             path_env = os.environ['PATH']
             path = os.path.join(self.build_folder, os.path.join(self.source_subfolder, "src"))
