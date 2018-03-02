@@ -72,7 +72,7 @@ class LibmagicConan(ConanFile):
             path_env = "{0}:{1}".format(path, path_env)
             env['PATH'] = path_env
 
-        with tools.environment_append({'PATH': path_env}):
+        with tools.environment_append(env):
             self._build_autotools()
 
     def package(self):
