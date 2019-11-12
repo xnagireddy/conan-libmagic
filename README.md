@@ -40,7 +40,7 @@ All issues, such as feature request, bug, support or discussion are centralized 
 
 The following command both runs all the steps of the conan file, and publishes the package to the local system cache.  This includes downloading dependencies from "build_requires" and "requires" , and then running the build() method.
 
-    $ conan create DEGoodmanWilson/stable
+    $ conan create . DEGoodmanWilson/stable
 
 ## Add Remote
 
